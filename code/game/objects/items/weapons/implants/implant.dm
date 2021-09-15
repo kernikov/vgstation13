@@ -335,7 +335,7 @@ the implant may become unstable and either pre-maturely inject the subject or si
 	if(isrevhead(H))
 		H.visible_message("<span class='big danger'>[H] seems to resist the implant!</span>", "<span class='danger'>You feel the corporate tendrils of Nanotrasen try to invade your mind!</span>")
 		return 0
-	if(iscultist(H) && veil_thickness >= CULT_ACT_I)
+	if(iscultist(H))
 		to_chat(H, "<span class='danger'>You feel the corporate tendrils of Nanotrasen trying to invade your mind!</span>")
 		spawn (1)//waiting for the implant to have its loc moved inside the body
 			H.implant_pop()

@@ -89,18 +89,15 @@ var/list/arcane_tomes = list()
 			<a href='byond://?src=\ref[src];page=[PAGE_FOREWORD]'><label> * </label> <li> Foreword</a> </li>"}
 
 	var i = 1
-	for(var/subtype in subtypesof(/datum/rune_spell/blood_cult))
-		var/datum/rune_spell/blood_cult/instance = subtype
-		if (initial(instance.Act_restriction) <= veil_thickness)
-			dat += "<a href='byond://?src=\ref[src];page=[i]'><label> \Roman[i] </label> <li>  [initial(instance.name)] </li></a>"
-			if (i == current_page)
-				var/datum/runeword/word1 = initial(instance.word1)
-				var/datum/runeword/word2 = initial(instance.word2)
-				var/datum/runeword/word3 = initial(instance.word3)
-				page_data = {"<div align="center"><b>\Roman[i]<br>[initial(instance.name)]</b><br><i>[initial(word1.english)], [initial(word2.english)], [word3 ? "[initial(word3.english)]" : "<any>"]</i></div><br>"}
-				page_data += initial(instance.page)
-		else
-			dat += "<label> \Roman[i] </label> <li>  __________ </li>"
+	for(var/subtype in subtypesof(/datum/rune_spell))
+		var/datum/rune_spell/instance = subtype
+		dat += "<a href='byond://?src=\ref[src];page=[i]'><label> \Roman[i] </label> <li>  [initial(instance.name)] </li></a>"
+		if (i == current_page)
+			var/datum/rune_word/word1 = initial(instance.word1)
+			var/datum/rune_word/word2 = initial(instance.word2)
+			var/datum/rune_word/word3 = initial(instance.word3)
+			page_data = {"<div align="center"><b>\Roman[i]<br>[initial(instance.name)]</b><br><i>[initial(word1.english)], [initial(word2.english)], [word3 ? "[initial(word3.english)]" : "<any>"]</i></div><br>"}
+			page_data += initial(instance.page)
 		i++
 
 	dat += {"<a href='byond://?src=\ref[src];page=[PAGE_LORE1]'><label> * </label> <li>  about this tome and our goal </li></a>
@@ -276,7 +273,7 @@ var/list/arcane_tomes = list()
 
 /obj/item/weapon/tome/AltClick(var/mob/user)
 	var/list/choices = list()
-	var/datum/rune_spell/blood_cult/instance
+	var/datum/rune_spell/instance
 	var/list/choice_to_talisman = list()
 	var/image/talisman_image
 	for(var/obj/item/weapon/talisman/T in talismans)
@@ -343,7 +340,7 @@ var/list/arcane_tomes = list()
 	ignite()
 
 /obj/item/weapon/talisman/proc/talisman_name()
-	var/datum/rune_spell/blood_cult/instance = spell_type
+	var/datum/rune_spell/instance = spell_type
 	if (blood_text)
 		return "\[blood message\]"
 	if (instance)
@@ -367,7 +364,7 @@ var/list/arcane_tomes = list()
 		to_chat(user, "<span class='info'>This one, however, seems pretty unremarkable.</span>")
 		return
 
-	var/datum/rune_spell/blood_cult/instance = spell_type
+	var/datum/rune_spell/instance = spell_type
 
 	if (iscultist(user) || isobserver(user))
 		if (attuned_rune)
@@ -392,7 +389,7 @@ var/list/arcane_tomes = list()
 
 /obj/item/weapon/talisman/attack(var/mob/living/target, var/mob/living/user)
 	if(iscultist(user) && spell_type)
-		var/datum/rune_spell/blood_cult/instance = spell_type
+		var/datum/rune_spell/instance = spell_type
 		if (initial(instance.touch_cast))
 			new spell_type(user, src, "touch", target)
 			qdel(src)
@@ -437,7 +434,7 @@ var/list/arcane_tomes = list()
 		T.talismans.Remove(src)
 	qdel(src)
 
-/obj/item/weapon/talisman/proc/imbue(var/mob/user, var/obj/effect/rune/blood_cult/R)
+/obj/item/weapon/talisman/proc/imbue(var/mob/user, var/obj/effect/rune/R)
 	if (!user || !R)
 		return
 
@@ -445,7 +442,7 @@ var/list/arcane_tomes = list()
 		to_chat(user, "<span class='warning'>Cannot imbue a talisman that has been written on.</span>")
 		return
 
-	var/datum/rune_spell/blood_cult/spell = get_rune_spell(user,null,"examine",R.word1, R.word2, R.word3)
+	var/datum/rune_spell/spell = get_rune_spell(user,null,"examine",R.word1, R.word2, R.word3)
 	if(initial(spell.talisman_absorb) == RUNE_CANNOT)//placing a talisman on a Conjure Talisman rune to try and fax it
 		user.drop_item(src)
 		src.forceMove(get_turf(R))
@@ -462,10 +459,6 @@ var/list/arcane_tomes = list()
 			to_chat(user, "<span class='warning'>There is no power in those runes. \The [src] isn't reacting to it.</span>")
 			return
 
-		if (initial(spell.Act_restriction) > veil_thickness)
-			to_chat(user, "<span class='danger'>The veil is still too thick for \the [src] to draw power from this rune.</span>")
-			return
-
 		//blood markings
 		overlays += image(icon,"talisman-[R.word1.icon_state]a")
 		overlays += image(icon,"talisman-[R.word2.icon_state]a")
@@ -479,21 +472,19 @@ var/list/arcane_tomes = list()
 		uses = initial(spell.talisman_uses)
 
 		var/talisman_interaction = initial(spell.talisman_absorb)
-		var/datum/rune_spell/blood_cult/active_spell = R.active_spell
+		var/datum/rune_spell/active_spell = R.active_spell
 		if(!istype(R))
 			return
 		if (active_spell)//some runes may change their interaction type dynamically (ie: Path Exit runes)
 			talisman_interaction = active_spell.talisman_absorb
-			if (istype(active_spell,/datum/rune_spell/blood_cult/portalentrance))
-				var/datum/rune_spell/blood_cult/portalentrance/entrance = active_spell
+			if (istype(active_spell,/datum/rune_spell/portalentrance))
+				var/datum/rune_spell/portalentrance/entrance = active_spell
 				if (entrance.network)
-					var/datum/runeset/rune_set = global_runesets["blood_cult"]
-					word_pulse(rune_set.words[entrance.network])
-			else if (istype(active_spell,/datum/rune_spell/blood_cult/portalexit))
-				var/datum/rune_spell/blood_cult/portalentrance/exit = active_spell
+					word_pulse(rune_words[entrance.network])
+			else if (istype(active_spell,/datum/rune_spell/portalexit))
+				var/datum/rune_spell/portalentrance/exit = active_spell
 				if (exit.network)
-					var/datum/runeset/rune_set = global_runesets["blood_cult"]
-					word_pulse(rune_set.words[exit.network])
+					word_pulse(rune_words[exit.network])
 
 		switch(talisman_interaction)
 			if (RUNE_CAN_ATTUNE)
@@ -508,7 +499,7 @@ var/list/arcane_tomes = list()
 				message_admins("Error! ([key_name(user)]) managed to imbue a Conjure Talisman rune. That shouldn't be possible!")
 				return
 
-/obj/item/weapon/talisman/proc/word_pulse(var/datum/runeword/W)
+/obj/item/weapon/talisman/proc/word_pulse(var/datum/rune_word/W)
 	var/image/I1 = image(icon,"talisman-[W.icon_state]a")
 	animate(I1, color = list(2,0.67,0.27,0,0.27,2,0.67,0,0.67,0.27,2,0,0,0,0,1,0,0,0,0), time = 5, loop = -1)
 	animate(color = list(1.875,0.56,0.19,0,0.19,1.875,0.56,0,0.56,0.19,1.875,0,0,0,0,1,0,0,0,0), time = 1)
@@ -665,6 +656,8 @@ var/list/arcane_tomes = list()
 	var/movespeed = 2//smaller = faster
 	health = 40
 	var/maxHealth = 40
+	var/reflector = FALSE
+	var/mob/living/linked_cultist = null
 
 /obj/item/weapon/melee/soulblade/Destroy()
 	var/turf/T = get_turf(src)
@@ -690,6 +683,13 @@ var/list/arcane_tomes = list()
 			B.fingerprints = fingerprints.Copy()
 		new /obj/item/soulstone(T)
 	shade = null
+	..()
+
+/obj/item/weapon/melee/soulblade/attack_hand(var/mob/living/user)
+	if (shade)
+		if (iscultist(user) && (linked_cultist != user))
+			linked_cultist = user
+			to_chat(shade, "<spawn class='notice'>You have made contact with [user]. As long as you remain within 5 tiles of them, you can move by yourself without losing blood, and regenerate blood slowly passively.</span>")
 	..()
 
 /obj/item/weapon/melee/soulblade/salt_act()
@@ -787,13 +787,6 @@ var/list/arcane_tomes = list()
 			to_chat(user, "<span class='warning'>\The [src] is unable to rip this soul. Such a powerful soul, it must be coveted by some powerful being.</span>")
 			return
 
-		var/datum/faction/bloodcult/cult = find_active_faction_by_type(/datum/faction/bloodcult)
-		if (cult)
-			var/datum/objective/bloodcult_sacrifice/O = locate() in cult.objective_holder.objectives
-			if (O && (target == O.sacrifice_target || (target.mind && target.mind == O.sacrifice_mind)))
-				to_chat(user, "<span class='warning'>\The [src] is unable to rip this soul. Such a powerful soul, it must be coveted by some powerful being.</span>")
-				return
-
 		var/datum/soul_capture/capture_datum = new()
 		capture_datum.init_datum(user, target, src)
 		qdel(capture_datum)
@@ -808,6 +801,7 @@ var/list/arcane_tomes = list()
 
 	if (blood >= 5)
 		blood = max(0,blood-5)
+		update_icon()
 		var/turf/starting = get_turf(user)
 		var/turf/target = get_turf(A)
 		var/obj/item/projectile/bloodslash/BS = new (starting)
@@ -843,15 +837,30 @@ var/list/arcane_tomes = list()
 				if (C.take_blood(null,5))//same cost as spin, basically negates the cost, but doesn't let you farm corpses. It lets you make a mess out of them however.
 					blood = min(100,blood+5)
 					to_chat(user, "<span class='warning'>You steal a bit of their blood, but not much.</span>")
-
+			update_icon()
+			if (shade)
+				shade.DisplayUI("Soulblade")
+		else if (M.isBloodedAnimal())
+			var/mob/living/simple_animal/SA = M
+			if (SA.stat != DEAD)
+				blood = min(100,blood+10)
+				to_chat(user, "<span class='warning'>You steal some of their blood!</span>")
+			else
+				blood = min(100,blood+5)
+				to_chat(user, "<span class='warning'>You steal a bit of their blood, but not much.</span>")
+			update_icon()
 			if (shade)
 				shade.DisplayUI("Soulblade")
 
+/obj/item/weapon/melee/soulblade/setPixelOffsetsFromParams(params, mob/user, base_pixx = 0, base_pixy = 0, clamp = TRUE)
+	..(params, user, -16, -16, FALSE) // clamp has to be false or we can't put the blade in the left and lower portions of a table
 
 /obj/item/weapon/melee/soulblade/pickup(var/mob/living/user)
+	..()
 	if(!iscultist(user))
 		to_chat(user, "<span class='warning'>An overwhelming feeling of dread comes over you as you pick up \the [src]. It would be wise to rid yourself of this, quickly.</span>")
 		user.Dizzy(120)
+	update_icon()
 
 /obj/item/weapon/melee/soulblade/dropped(var/mob/user)
 	..()
@@ -878,6 +887,11 @@ var/list/arcane_tomes = list()
 	if (istype(loc,/mob/living/carbon))
 		var/mob/living/carbon/C = loc
 		C.update_inv_hands()
+		if (iscultist(C))
+			var/image/I = image('icons/mob/hud.dmi', src, "consthealth[10*round((blood/maxblood)*10)]")
+			I.pixel_x = 16
+			I.pixel_y = 16
+			overlays += I
 
 
 /obj/item/weapon/melee/soulblade/throw_at(var/atom/targ, var/range, var/speed, var/override = 1, var/fly_speed = 0)
@@ -921,7 +935,7 @@ var/list/arcane_tomes = list()
 
 /obj/item/weapon/melee/soulblade/Cross(var/atom/movable/mover, var/turf/target, var/height=1.5, var/air_group = 0)
 	if(istype(mover, /obj/item/projectile))
-		if (prob(60))
+		if (prob(60) || reflector)
 			return 0
 	return ..()
 
@@ -950,8 +964,14 @@ var/list/arcane_tomes = list()
 		takeDamage(O.throwforce)
 
 /obj/item/weapon/melee/soulblade/bullet_act(var/obj/item/projectile/P)
-	. = ..()
-	takeDamage(P.damage)
+	if (reflector)
+		if(!istype(P, /obj/item/projectile/beam)) //has seperate logic
+			P.reflected = 1
+			P.rebound(src)
+		return PROJECTILE_COLLISION_REBOUND // complete projectile permutation
+	else
+		. = ..()
+		takeDamage(P.damage)
 
 /obj/item/weapon/melee/soulblade/proc/capture_shade(var/mob/living/simple_animal/shade/target, var/mob/user)
 	if(shade)
@@ -1101,6 +1121,9 @@ var/list/arcane_tomes = list()
 	actions_types = list(/datum/action/item_action/toggle_anon)
 	var/anon_mode = FALSE
 
+/obj/item/clothing/head/culthood/NoiseDampening()	// those hoods cover the ears
+	return TRUE
+
 /obj/item/clothing/head/culthood/attack_self(var/mob/user)
 	if (!iscultist(user))
 		return
@@ -1173,6 +1196,31 @@ var/list/arcane_tomes = list()
 	return
 
 /obj/item/clothing/shoes/cult/salt_act()
+	acid_melt()
+
+///////////////////////////////////////CULT GLOVES////////////////////////////////////////////////
+
+
+/obj/item/clothing/gloves/black/cult
+	name = "cult gloves"
+	desc = "These gloves are quite comfortable, and will keep you warm!"
+	inhand_states = list("left_hand" = 'icons/mob/in-hand/left/cultstuff.dmi', "right_hand" = 'icons/mob/in-hand/right/cultstuff.dmi')
+	icon_state = "cult"
+	item_state = "cultgloves"
+	_color = "cult"
+	siemens_coefficient = 0.7
+	heat_conductivity = INS_GLOVES_HEAT_CONDUCTIVITY
+	max_heat_protection_temperature = GLOVES_MAX_HEAT_PROTECTION_TEMPERATURE
+	species_fit = list(VOX_SHAPED, INSECT_SHAPED)
+	mech_flags = MECH_SCAN_FAIL
+
+/obj/item/clothing/gloves/black/cult/get_cult_power()
+	return 10
+
+/obj/item/clothing/gloves/black/cult/cultify()
+	return
+
+/obj/item/clothing/gloves/black/cult/salt_act()
 	acid_melt()
 
 ///////////////////////////////////////CULT ROBES////////////////////////////////////////////////
@@ -1362,15 +1410,13 @@ var/list/arcane_tomes = list()
 	mech_flags = MECH_SCAN_FAIL
 
 /obj/item/weapon/bloodcult_pamphlet/attack_self(var/mob/user)
+	if (iscultist(user))
+		return
 	var/datum/faction/bloodcult/cult = find_active_faction_by_type(/datum/faction/bloodcult)
 	if (!cult)
 		cult = ticker.mode.CreateFaction(/datum/faction/bloodcult, null, 1)
 		cult.OnPostSetup()
-	var/datum/role/cultist/newCultist
-	if (cult.members.len > 0)
-		newCultist = new /datum/role/cultist()
-	else
-		newCultist = new /datum/role/cultist/chief()
+	var/datum/role/cultist/newCultist = new /datum/role/cultist()
 	newCultist.AssignToRole(user.mind,1)
 	cult.HandleRecruitedRole(newCultist)
 	newCultist.OnPostSetup()
@@ -1390,7 +1436,7 @@ var/list/arcane_tomes = list()
 /obj/item/weapon/bloodcult_pamphlet/salt_act()
 	ignite()
 
-//Jaunter: creates a pylon on spawn, lets you teleport to it on use
+//Jaunter: creates a pylon on spawn, lets you teleport to it on use. That's an item I made to test and debug cult blood jaunts
 /obj/item/weapon/bloodcult_jaunter
 	name = "test jaunter"
 	desc = ""
@@ -1576,6 +1622,7 @@ var/list/arcane_tomes = list()
 		/obj/item/clothing/head/culthood,
 		/obj/item/clothing/shoes/cult,
 		/obj/item/clothing/suit/cultrobes,
+		/obj/item/clothing/gloves/black/cult,
 		)
 
 	var/list/stored_gear = list()
@@ -1655,5 +1702,40 @@ var/list/arcane_tomes = list()
 /obj/item/weapon/blood_tesseract/cultify()
 	return
 
-/obj/item/weapon/handcuffs/cult/salt_act()
+/obj/item/weapon/blood_tesseract/salt_act()
 	throw_impact()
+
+///////////////////////////////////////BLOOD CANDLE////////////////////////////////////////////////
+
+/obj/item/candle/blood
+	name = "blood candle"
+	desc = "A candle made out of blood moth wax, burns much longer than regular candles. Used for moody lighting and occult rituals."
+	icon = 'icons/obj/candle.dmi'
+	icon_state = "bloodcandle"
+
+	wax = 1200 // 20 minutes
+	trashtype = /obj/item/trash/blood_candle
+
+/obj/item/candle/blood/update_icon()
+	overlays.len = 0
+	var/i
+	if(wax > 800)
+		i = 1
+	else if(wax > 400)
+		i = 2
+	else i = 3
+	icon_state = "bloodcandle[i]"
+	if (lit)
+		var/image/I = image(icon,src,"[icon_state]_lit")
+		I.blend_mode = BLEND_ADD
+		if (isturf(loc))
+			I.plane = ABOVE_LIGHTING_PLANE
+		else
+			I.plane = ABOVE_HUD_PLANE // inventory
+		overlays += I
+
+/obj/item/trash/blood_candle
+	name = "blood candle"
+	desc = "A candle made out of blood moth wax, burns much longer than regular candles. Used for moody lighting and occult rituals."
+	icon = 'icons/obj/candle.dmi'
+	icon_state = "bloodcandle4"
